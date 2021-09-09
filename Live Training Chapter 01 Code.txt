@@ -28,6 +28,10 @@ docker --version
 # start docker deamon
 sudo systemctl start docker
 
+# set docker to start on boot
+sudo systemctl enable docker.service
+sudo systemctl enable containerd.service
+
 # run a test container
 sudo docker run hello-world
 
