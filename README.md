@@ -1,6 +1,6 @@
 # LiveDockerTraining
 
-![Docker Quick Start Guide](./images/dqsg.png)
+![Docker Quick Start Guide](./images/DQSG.png)
 
 - Chapter 01 - Setting up your Docker Environment
 - Chapter 02 - Learning Docker Commands
