@@ -15,5 +15,4 @@
 **Docker Quick Start Guide** reached #14 on the Top 100 Paid best sellers list in the System Administration category.
 ![14th in top 100](./images/number14.png)
 
-If you have a desire to get a physical copy of the book, or want to share a review, here is a link to the book on Amazon.
-https://amzn.to/2VtXybP
+If you have a desire to get a physical copy of the book, or want to share a review, here is a link to the book on Amazon: <a href="https://amzn.to/2VtXybP" target="_blank">Docker Quick Start Guide</a>.
