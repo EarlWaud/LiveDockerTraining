@@ -63,7 +63,7 @@ volume-demo:latest tail -f /dev/null
 
 docker container run --rm -d \
 --mount source=my-volume,destination=/myvol,readonly \
---name vol-demo2 \
+--name vol-demo4 \
 volume-demo:latest tail -f /dev/null
 
 docker container run --rm -d \
@@ -73,7 +73,7 @@ volume-demo:latest tail -f /dev/null
 
 docker container ps -a --filter volume=my-volume
 
-docker container stop $(docker container ls –aq)
+docker container stop $(docker container ls -q)
 
 docker volume ls
 
