@@ -1,4 +1,4 @@
-"# LiveDockerTraining"
+# LiveDockerTraining
 
 Chapter 01 - Setting up your Docker Environment
 
