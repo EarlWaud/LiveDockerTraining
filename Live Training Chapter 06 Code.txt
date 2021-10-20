@@ -1,75 +1,91 @@
-﻿Live Training Chapter 05 Code
+﻿Live Training Chapter 06 Code
 ------------------------------
 
-# Set up your Docker swarm cluster
-docker swarm init
+# Docker network managment command
+docker network
 
-# Get the join token for adding managers
-docker swarm join-token manager
-# Get the join token for adding workers
-docker swarm join-token worker
+# Docker network management subcommands
+docker network connect           # Connect a container to a network
+docker network create            # Create a network
+docker network disconnect        # Disconnect a container from a network
+docker network inspect           # Display detailed information on one or more networks
+docker network ls                # List networks
+docker network rm                # Remove one or more networks
+docker network prune             # Remove all unused networks
 
-# Rotate the worker join token
-docker swarm join-token --rotate worker
+# Install the weave network driver plug-in
+sudo curl -L git.io/weave -o /usr/local/bin/weave
+sudo chmod a+x /usr/local/bin/weave
+# Disable checking for new versions
+export CHECKPOINT_DISABLE=1
+# Start up the weave network
+weave launch [for 2nd, 3rd, etc. optional hostname or IP of 1st Docker host running weave]
+# Set up the environment to use weave
+eval $(weave env)
 
-# Join this node to an existing swarm
-docker swarm join --token SWMTKN-1-3ovu7fbnqfqlw66csvvfw5xgljl26mdv0dudcdssjdcltk2sen-a830tv7e8bajxu1k5dc0045zn 192.168.159.156:2377
+# Start up weave on the 2nd node
+weave launch node01
 
-# View the current swarm certificate
-docker swarm ca
-# Rotate the swarm certificate
-docker swarm ca --rotate
+# Peer host node02 with the weave network by connecting from node01
+weave connect node02
 
-# Query the state of the certificate rotation in a swarm cluster
-docker node ls --format '{{.ID}} {{.Hostname}} {{.Status}} {{.TLSStatus}}'
+# On ubuntu-node01:
+# Install and setup the weave driver
+sudo curl -L git.io/weave -o /usr/local/bin/weave
+sudo chmod a+x /usr/local/bin/weave
+export CHECKPOINT_DISABLE=1
+weave launch
+eval $(weave env)
 
-# Retrieve the current unlock key
-docker swarm unlock-key
-# Rotate to a new unlock key
-docker swarm unlock-key --rotate
+# On ubuntu-node02:
+# Install and setup the weave driver
+sudo curl -L git.io/weave -o /usr/local/bin/weave
+sudo chmod a+x /usr/local/bin/weave
+export CHECKPOINT_DISABLE=1
+weave launch
+eval $(weave env)
 
-# Enable autolock on your swarm cluster
-docker swarm update --autolock=true
-# Adjust certificate expiry to 30 days
-docker swarm update --cert-expiry 720h
+# Now, back on ubuntu-node01:
+# Bring node02 in as a peer on node01's weave network
+weave connect ubuntu-node02
 
-# Set node03's availability to drain
-docker node update --availability drain ubuntu-node03
+# Starting with ubuntu-node01:
+# Run a container detached on node01
+docker container run -d --name app01 alpine tail -f /dev/null
 
-# Promote worker nodes 04 and 05 to manager status
-docker node promote ubuntu-node04 ubuntu-node05
-# Demote manager nodes 01 and 02 to worker status
-docker node demote ubuntu-node01 ubuntu-node02
+# Now, launch a container on ubuntu-node02:
+# Run a container detached on node02
+docker container run -d --name app02 alpine tail -f /dev/null
 
-# Syntax for the service create command
-# Usage: docker service create [OPTIONS] IMAGE [COMMAND] [ARG...]
-# Create a service
-docker service create --replicas 1 --name submarine alpine ping google.com
+# Since we are on node02, we will check there first...
+# From inside the app02 container running on node02,
+#    let's ping the app01 container running on node01
+docker container exec -it app02 ping -c 4 app01
 
-# Get help with the service create command
-docker service create --help
+# Similarly, from inside the app01 container running on node01,
+#   let's ping the app02 container running on node02
+docker container exec -it app01 ping -c 4 app02
 
-# Create a nginx web-server that redirects host traffic from port 8080 to port 80 in the container
-docker container run --detach --name web-server1 --publish 8080:80 nginx
+# Docker network create command syntax
+# Usage: docker network create [OPTIONS] NETWORK
 
-# Create a nginx web-server service using the publish parameter
-docker service create --name web-service --replicas 3 --publish published=8080,target=80 nginx
+# Create a new overlay network, with all default options
+docker network create -d overlay defaults-over
 
-# List services in the swarm
-# Usage: docker service ls [OPTIONS]
-docker service list
+# Create a new overlay network with specific IP settings
+docker network create -d overlay \
+--subnet=172.30.0.0/24 \
+--ip-range=172.30.0.0/28 \
+--gateway=172.30.0.254 \
+specifics-over
+# Initial validation
+docker network inspect specifics-over --format '{{json .IPAM.Config}}' | jq
 
-# List the tasks associated with a service
-# Usage: docker service ps [OPTIONS] SERVICE [SERVICE...]
-docker service ps
-
-# Remove one or more services from the swarm
-# Usage: docker service rm SERVICE [SERVICE...]
-docker service remove sleepy_snyder
-
-# Remove ALL the services from the swarm
-docker service remove $(docker service list -q)
-
-# Adjust the configured number of replicas for a service
-# Usage: docker service scale SERVICE=REPLICAS [SERVICE=REPLICAS...]
-docker service scale web-service=4
+# Create service tester1
+docker service create --detach --replicas 3 --name tester1 \
+  --network specifics-over alpine tail -f /dev/null
+# Create service tester2
+docker service create --detach --replicas 3 --name tester2 \
+  --network specifics-over alpine tail -f /dev/null
+# From a container in the tester1 service ping the tester2 service by name
+docker container exec -it tester1.3.5hj309poppj8jo272ks9n4k6a ping -c 3 tester2
